@@ -41,19 +41,17 @@ function createDB(){
 }
 
 function checkTableEmpty(key){
-	
 	var query=`SELECT TABLE_ROWS
 			   FROM information_schema.TABLES
 			   WHERE TABLE_SCHEMA = 'b9'
 			   AND TABLE_NAME = '${key}'`
-	console.log(query)		   
 	return new Promise(function(resolve,reject){
 		runQuery(query).then(
 			(result)=>{
-				console.dir(result)
-				// TODO check not work
-				if(result===[]) reject(new TypeError('No such table'))
-				console.log('here')	
+				if(result[0]===undefined){
+					reject(new TypeError('No such table '+key))
+					return
+				}
 				if(result[0].TABLE_ROWS>0) reject(new Error('Table not empty'))
 				resolve('empty')
 			},
@@ -65,34 +63,39 @@ function checkTableEmpty(key){
 }
 
 function populateTable(key){
-	console.log('poputate '+key)
-	return new Promise(function(resolve,reject){
-		if(key=='tank_tape'){
-			resolve('ok')
-		}
-		if(key=='tank_volume'){ 
-			resolve('ok')
-		}
-		if(key=='tank_elpower'){ 
-			resolve('ok')
-		}		
-	})
+	var query=insertDefaultValuesQueries[key]
+	return runQuery(query)
 }
 
 function populateDB(){
-	  let chain=Promise.resolve()
+	  let chain=new Promise(function(resolve,reject){
+		  setTimeout(()=>{resolve()},1000)
+	  })
 	  for (key in insertDefaultValuesQueries){
 		(function(key){ 
 			chain=chain
 			.then(()=>checkTableEmpty(key)
-			.then(()=>populateTable(key),()=>console.log('Table '+key+' not empty')))
+			.then(()=>populateTable(key),(err)=>{
+					if(err instanceof TypeError){throw(err)}
+					console.log('Table '+key+' not empty')
+				}))
 		})(key)
 	  }
-	  chain.catch((err)=>console.log('Error during populate mysql database:',err))
+	  chain.catch((err)=>{
+		  console.log('Error during populate mysql database:',err)
+		  _mySqlIsConnect=false;
+	  })
 }
 
 function sqlInitProc(){
 	_tryToConnect=true
+	if(_con){
+		try{
+			_con.end()
+		}catch(e){
+			console.log('Cannot close mysql connection')
+		}
+	}
 	_con = mysql.createConnection({
 	  host: "192.168.0.99",
 	  user: "root",

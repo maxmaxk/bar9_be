@@ -12,9 +12,18 @@ const createQueries=[
 	name CHAR(200) NOT NULL,
 	password CHAR(200) NOT NULL,
 	user_role_id INT,
-	token CHAR(200),
 	PRIMARY KEY(id),
 	FOREIGN KEY (user_role_id) REFERENCES user_roles(id)
+		ON UPDATE CASCADE
+		ON DELETE RESTRICT
+);`,
+`CREATE TABLE IF NOT EXISTS tokens(
+	id INT NOT NULL AUTO_INCREMENT,
+	token CHAR(200) NOT NULL,
+	user_id INT NOT NULL,
+	token_time DATETIME,
+	PRIMARY KEY(id),
+	FOREIGN KEY (user_id) REFERENCES users(id)
 		ON UPDATE CASCADE
 		ON DELETE RESTRICT
 );`,
@@ -46,24 +55,40 @@ const createQueries=[
 );`,
 `CREATE TABLE IF NOT EXISTS tank_manage(
 	id INT NOT NULL AUTO_INCREMENT,
+	code INT NOT NULL,
 	name CHAR(200) NOT NULL,
 	PRIMARY KEY(id)
 );`,
 `CREATE TABLE IF NOT EXISTS tank_options(
 	id INT NOT NULL AUTO_INCREMENT,
+	code INT NOT NULL,
 	name CHAR(200) NOT NULL,
 	PRIMARY KEY(id)
 );`,
 `CREATE TABLE IF NOT EXISTS tank_communication(
 	id INT NOT NULL AUTO_INCREMENT,
+	code INT NOT NULL,
 	name CHAR(200) NOT NULL,
 	PRIMARY KEY(id)
 );`,
 `CREATE TABLE IF NOT EXISTS tank_eloptions(
 	id INT NOT NULL AUTO_INCREMENT,
+	code INT NOT NULL,
 	name CHAR(200) NOT NULL,
 	PRIMARY KEY(id)
 );`,
+
+`CREATE TABLE IF NOT EXISTS produce_states(
+	id INT NOT NULL AUTO_INCREMENT,
+	state CHAR(200) NOT NULL,
+	PRIMARY KEY(id)
+);`,
+`CREATE TABLE IF NOT EXISTS docs_states(
+	id INT NOT NULL AUTO_INCREMENT,
+	state CHAR(200) NOT NULL,
+	PRIMARY KEY(id)
+);`,
+
 
 
 `CREATE TABLE IF NOT EXISTS tank_models(
@@ -84,6 +109,7 @@ const createQueries=[
 	tank_step2_count INT,
 	tank_power_entries_count INT,
 	tank_generation INT,
+	docs_state_id INT NOT NULL,
 	PRIMARY KEY(id),
 	FOREIGN KEY (tank_type_id) REFERENCES tank_type(id)
 		ON UPDATE CASCADE
@@ -111,8 +137,52 @@ const createQueries=[
 		ON DELETE RESTRICT,	
 	FOREIGN KEY (tank_eloptions_id) REFERENCES tank_eloptions(id)
 		ON UPDATE CASCADE
+		ON DELETE RESTRICT,
+	FOREIGN KEY (docs_state_id) REFERENCES docs_states(id)
+		ON UPDATE CASCADE
+		ON DELETE RESTRICT		
+);`,
+
+`CREATE TABLE IF NOT EXISTS tank_instance(
+	id INT NOT NULL AUTO_INCREMENT,
+	tank_model_id INT NOT NULL,
+	serial_number CHAR(100) NOT NULL,
+	produce_state_id INT NOT NULL,
+	PRIMARY KEY(id),
+	FOREIGN KEY (tank_model_id) REFERENCES tank_models(id)
+		ON UPDATE CASCADE
+		ON DELETE RESTRICT,	
+	FOREIGN KEY (produce_state_id) REFERENCES produce_states(id)
+		ON UPDATE CASCADE
 		ON DELETE RESTRICT
 );`,
+
+`CREATE TABLE IF NOT EXISTS produce_orders(
+	id INT NOT NULL AUTO_INCREMENT,
+	order_id INT NOT NULL,
+	tank_instance_id INT NOT NULL,
+	quantity INT NOT NULL,
+	comment CHAR(200),
+	PRIMARY KEY(id),
+	FOREIGN KEY (tank_model_id) REFERENCES tank_models(id)
+		ON UPDATE CASCADE
+		ON DELETE RESTRICT,
+	FOREIGN KEY (tank_instance_id) REFERENCES tank_instance(id)
+		ON UPDATE CASCADE
+		ON DELETE RESTRICT
+);`
+
+`CREATE TABLE IF NOT EXISTS docs_orders(
+	id INT NOT NULL AUTO_INCREMENT,
+	tank_model_id INT NOT NULL,
+	comment CHAR(200),
+	PRIMARY KEY(id),
+	FOREIGN KEY (tank_model_id) REFERENCES tank_models(id)
+		ON UPDATE CASCADE
+		ON DELETE RESTRICT
+);`
+
+
 ]
 
 module.exports=createQueries
